@@ -52,12 +52,38 @@ stringCheck :: String -> Bool
 stringCheck string = vowelCheck' string && doublesCheck string && forbiddenStringCheck string
 
 -- **Part 2**
+isIn :: String -> String -> Bool
+isIn elem string@(x:xs)
+    | length elem > length string = False
+    | firstPart == elem = True
+    | otherwise = isIn elem xs
+    where firstPart = take (length elem) string
 
 newCheck1 :: String -> Bool
+newCheck1 "" = False
+newCheck1 [x] = False
+newCheck1 all@(x:y:string)
+    | length all < 4 = False
+    | [x, y] `isIn` string = True
+    | otherwise = newCheck1 (y:string)
+
+newCheck2 :: String -> Bool
+newCheck2 "" = False
+newCheck2 [x] = False
+newCheck2 [x, y] = False
+newCheck2 all@(x:y:z:string)
+    | x == z = True
+    | otherwise = newCheck2 (y:z:string)
+
+newStringCheck :: String -> Bool
+newStringCheck string = newCheck1 string && newCheck2 string
 
 main :: IO ()
 main = do
     content <- readFile "./input.txt"
     let strings = lines content
         result = length $ filter stringCheck strings
+        newResult = length $ filter newStringCheck strings
+    putStrLn ("Number of strings: " <> show (length strings))
     putStrLn ("Number of nice strings: " <> show result)
+    putStrLn ("Number of new nice strings: " <> show newResult)
