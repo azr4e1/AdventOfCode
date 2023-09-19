@@ -92,7 +92,7 @@ instructionExecuteMap' :: Instruction -> Set.Set Corner -> Set.Set Corner
 instructionExecuteMap' (Instruction instr range) lightsOn =
     let newRange = Set.fromList . completeRange $ range
     in instructionExecute' instr lightsOn newRange
-        
+
 -- main :: IO ()
 -- main = do
 --     content <- readFile "./input.txt"
