@@ -15,6 +15,7 @@
 
 import qualified Data.Map as Map
 import Data.List (foldl')
+import qualified Data.Set as Set
 
 type Corner = (Int, Int)
 data Range = Range { firstCorner :: Corner
@@ -74,23 +75,40 @@ instructionExecute string val =
 instructionExecuteMap :: Instruction -> Map.Map Corner Bool -> Map.Map Corner Bool
 instructionExecuteMap (Instruction instr range) map =
     let listRange = completeRange range
-        instructionExecute' string val1 val2 = instructionExecute string val1
-        updateMap inst map el = Map.insertWith (instructionExecute' inst)
-                                               el
-                                               (maybe False id (Map.lookup el map))
-                                               map
-    in foldl (updateMap instr) map listRange
+        updateMap inst map el = Map.insert el
+                                           (instructionExecute inst
+                                           . maybe False id $ Map.lookup el map) map
+    in Map.filter id (foldl' (updateMap instr) map listRange)
+
+instructionExecute' :: String -> Set.Set Corner -> Set.Set Corner -> Set.Set Corner
+instructionExecute' instr lightsOn newRange =
+    case instr of
+        "toggle" -> Set.union (Set.difference lightsOn newRange)
+                              (Set.difference newRange lightsOn)
+        "turn off" -> Set.difference lightsOn newRange
+        "turn on" -> Set.union lightsOn newRange
+
+instructionExecuteMap' :: Instruction -> Set.Set Corner -> Set.Set Corner
+instructionExecuteMap' (Instruction instr range) lightsOn =
+    let newRange = Set.fromList . completeRange $ range
+    in instructionExecute' instr lightsOn newRange
         
-
-lightGrid :: Map.Map Corner Bool
-lightGrid = Map.fromList [((a, b), False) | a <- [0..999], b <- [0..999]]
-
+-- main :: IO ()
+-- main = do
+--     content <- readFile "./input.txt"
+--     let instructions = take 1 $ lines content
+--         parsedInstructions = map instructionParser instructions
+--         finalLights = foldl' (flip instructionExecuteMap) Map.empty parsedInstructions
+--         lightsOn = length finalLights
+--     -- putStrLn ("Lights: " <> show finalLights)
+--     putStrLn ("Number of lights on: " <> show lightsOn)
 
 main :: IO ()
 main = do
     content <- readFile "./input.txt"
     let instructions = lines content
         parsedInstructions = map instructionParser instructions
-        finalLights = foldl' (flip instructionExecuteMap) lightGrid parsedInstructions
-        lightsOn = (length . filter id . Map.elems) finalLights
-    putStrLn ("Number of lights on: " <> show lightsOn)
+        initialLightsOn = Set.empty
+        finalLightsOn = foldl (flip instructionExecuteMap') initialLightsOn parsedInstructions
+        nrLightsOn = length finalLightsOn
+    putStrLn ("Number of lights on: " <> show nrLightsOn)
