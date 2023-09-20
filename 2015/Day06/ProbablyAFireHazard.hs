@@ -13,17 +13,18 @@
 -- turn off 499,499 through 500,500 would turn off (or leave off) the middle four lights.
 -- After following the instructions, how many lights are lit?
 
+-- **Part 1**
 import qualified Data.Map as Map
 import Data.List (foldl')
 import qualified Data.Set as Set
 
-type Corner = (Int, Int)
 data Range = Range { firstCorner :: Corner
                    , secondCorner ::Corner
                    } deriving Show
 data Instruction = Instruction { instruction :: String
                                , range :: Range
                                } deriving Show
+type Corner = (Int, Int)
 type Delimiter = Char
 type Context = String
 type Parsed = [String]
@@ -64,21 +65,22 @@ completeRange (Range (x1, y1) (x2, y2)) =
         secondSide = y2 - y1
     in [(x1+a, y1+b) | a <- [0..firstSide], b <- [0..secondSide]]
 
-instructionExecute :: String -> Bool -> Bool
+instructionExecute :: String -> Int -> Int
 instructionExecute string val =
     case string of
-        "toggle" -> not val
-        "turn off" -> False
-        "turn on" -> True
-        _ -> False
+        "toggle" -> val + 2
+        "turn off" -> if val == 0 then 0 else val - 1
+        "turn on" -> val + 1
+        _ -> 0
 
-instructionExecuteMap :: Instruction -> Map.Map Corner Bool -> Map.Map Corner Bool
+instructionExecuteMap :: Instruction -> Map.Map Corner Int -> Map.Map Corner Int
 instructionExecuteMap (Instruction instr range) map =
     let listRange = completeRange range
         updateMap inst map el = Map.insert el
                                            (instructionExecute inst
-                                           . maybe False id $ Map.lookup el map) map
-    in Map.filter id (foldl' (updateMap instr) map listRange)
+                                           . maybe 0 id $ Map.lookup el map) map
+    -- in Map.filter (>0) (foldl' (updateMap instr) map listRange)
+    in foldl' (updateMap instr) map listRange
 
 instructionExecute' :: String -> Set.Set Corner -> Set.Set Corner -> Set.Set Corner
 instructionExecute' instr lightsOn newRange =
@@ -93,22 +95,25 @@ instructionExecuteMap' (Instruction instr range) lightsOn =
     let newRange = Set.fromList . completeRange $ range
     in instructionExecute' instr lightsOn newRange
 
--- main :: IO ()
--- main = do
---     content <- readFile "./input.txt"
---     let instructions = take 1 $ lines content
---         parsedInstructions = map instructionParser instructions
---         finalLights = foldl' (flip instructionExecuteMap) Map.empty parsedInstructions
---         lightsOn = length finalLights
---     -- putStrLn ("Lights: " <> show finalLights)
---     putStrLn ("Number of lights on: " <> show lightsOn)
+-- **Part 2**
+instructionExecuteNew :: Instruction -> Int -> Int
+instructionExecuteNew (Instruction instr range) lightsOn =
+    let nrOfLights = length . completeRange $ range
+    in
+        case instr of
+            "toggle" -> lightsOn + 2 * nrOfLights
+            "turn on" -> lightsOn + nrOfLights
+            "turn off" -> lightsOn - nrOfLights
 
 main :: IO ()
 main = do
     content <- readFile "./input.txt"
     let instructions = lines content
         parsedInstructions = map instructionParser instructions
-        initialLightsOn = Set.empty
-        finalLightsOn = foldl (flip instructionExecuteMap') initialLightsOn parsedInstructions
-        nrLightsOn = length finalLightsOn
-    putStrLn ("Number of lights on: " <> show nrLightsOn)
+        -- initialLightsOn = Set.empty
+        -- finalLightsOn = foldl (flip instructionExecuteMap') initialLightsOn parsedInstructions
+        -- nrLightsOn = length finalLightsOn
+        finalLightsOnNew = sum . Map.elems $ foldl' (flip instructionExecuteMap) Map.empty parsedInstructions
+    -- putStrLn ("Number of lights on: " <> show nrLightsOn)
+    putStrLn ("Number of lights on new: " <> show finalLightsOnNew)
+
