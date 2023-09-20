@@ -80,7 +80,9 @@ instructionExecuteMap (Instruction instr range) map =
                                            (instructionExecute inst
                                            . maybe 0 id $ Map.lookup el map) map
     -- in Map.filter (>0) (foldl' (updateMap instr) map listRange)
-    in foldl' (updateMap instr) map listRange
+    in Map.filter (>0) $ foldl' (updateMap instr) map listRange
+
+-- instructionExecuteList :: Instruction -> 
 
 instructionExecute' :: String -> Set.Set Corner -> Set.Set Corner -> Set.Set Corner
 instructionExecute' instr lightsOn newRange =
@@ -96,14 +98,10 @@ instructionExecuteMap' (Instruction instr range) lightsOn =
     in instructionExecute' instr lightsOn newRange
 
 -- **Part 2**
-instructionExecuteNew :: Instruction -> Int -> Int
-instructionExecuteNew (Instruction instr range) lightsOn =
-    let nrOfLights = length . completeRange $ range
-    in
-        case instr of
-            "toggle" -> lightsOn + 2 * nrOfLights
-            "turn on" -> lightsOn + nrOfLights
-            "turn off" -> lightsOn - nrOfLights
+-- instructionExecuteNew :: String -> [(Corner, Int)] -> Set.Set Corner -> [(Corner, Int)]
+-- instructionExecuteNew instr lights newRange =
+--     case instr of
+--         "toggle" -> 
 
 main :: IO ()
 main = do
@@ -116,4 +114,3 @@ main = do
         finalLightsOnNew = sum . Map.elems $ foldl' (flip instructionExecuteMap) Map.empty parsedInstructions
     -- putStrLn ("Number of lights on: " <> show nrLightsOn)
     putStrLn ("Number of lights on new: " <> show finalLightsOnNew)
-
