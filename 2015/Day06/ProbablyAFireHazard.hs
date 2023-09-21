@@ -65,25 +65,6 @@ completeRange (Range (x1, y1) (x2, y2)) =
         secondSide = y2 - y1
     in [(x1+a, y1+b) | a <- [0..firstSide], b <- [0..secondSide]]
 
-instructionExecute :: String -> Int -> Int
-instructionExecute string val =
-    case string of
-        "toggle" -> val + 2
-        "turn off" -> if val == 0 then 0 else val - 1
-        "turn on" -> val + 1
-        _ -> 0
-
-instructionExecuteMap :: Instruction -> Map.Map Corner Int -> Map.Map Corner Int
-instructionExecuteMap (Instruction instr range) map =
-    let listRange = completeRange range
-        updateMap inst map el = Map.insert el
-                                           (instructionExecute inst
-                                           . maybe 0 id $ Map.lookup el map) map
-    -- in Map.filter (>0) (foldl' (updateMap instr) map listRange)
-    in Map.filter (>0) $ foldl' (updateMap instr) map listRange
-
--- instructionExecuteList :: Instruction -> 
-
 instructionExecute' :: String -> Set.Set Corner -> Set.Set Corner -> Set.Set Corner
 instructionExecute' instr lightsOn newRange =
     case instr of
@@ -98,19 +79,30 @@ instructionExecuteMap' (Instruction instr range) lightsOn =
     in instructionExecute' instr lightsOn newRange
 
 -- **Part 2**
--- instructionExecuteNew :: String -> [(Corner, Int)] -> Set.Set Corner -> [(Corner, Int)]
--- instructionExecuteNew instr lights newRange =
---     case instr of
---         "toggle" -> 
+instructionExecute :: String -> Int -> Int
+instructionExecute string val =
+    case string of
+        "toggle" -> val + 2
+        "turn off" -> if val == 0 then 0 else val - 1
+        "turn on" -> val + 1
+        _ -> 0
+
+instructionExecuteMap :: Instruction -> Map.Map Corner Int -> Map.Map Corner Int
+instructionExecuteMap (Instruction instr range) map =
+    let listRange = completeRange range
+        updateMap inst map el = Map.insert el
+                                           (instructionExecute inst
+                                           . maybe 0 id $ Map.lookup el map) map
+    in Map.filter (>0) $ foldl' (updateMap instr) map listRange
 
 main :: IO ()
 main = do
     content <- readFile "./input.txt"
     let instructions = lines content
         parsedInstructions = map instructionParser instructions
-        -- initialLightsOn = Set.empty
-        -- finalLightsOn = foldl (flip instructionExecuteMap') initialLightsOn parsedInstructions
-        -- nrLightsOn = length finalLightsOn
+        initialLightsOn = Set.empty
+        finalLightsOn = foldl (flip instructionExecuteMap') initialLightsOn parsedInstructions
+        nrLightsOn = length finalLightsOn
         finalLightsOnNew = sum . Map.elems $ foldl' (flip instructionExecuteMap) Map.empty parsedInstructions
-    -- putStrLn ("Number of lights on: " <> show nrLightsOn)
+    putStrLn ("Number of lights on: " <> show nrLightsOn)
     putStrLn ("Number of lights on new: " <> show finalLightsOnNew)
