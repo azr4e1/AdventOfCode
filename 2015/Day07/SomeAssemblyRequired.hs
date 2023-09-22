@@ -37,15 +37,79 @@
 --
 -- In little Bobby's kit's instructions booklet (provided as your puzzle input), what signal is ultimately provided to wire a?
 
-import qualified Data.Bits as Bits
+import Data.Bits ((.&.),
+                  (.|.),
+                  shiftL,
+                  shiftR,
+                  complement)
 import Data.Word (Word16)
+import qualified Data.Map as Map
+import Data.Char (isNumber)
+import Data.Maybe (fromMaybe)
 
-data Wire = Wire { name :: String
-                 , value :: Maybe Word16 }
-data Operations = AND Wire Wire
-                | OR Wire Wire
-                | NOT Wire
-                | RSHIFT Wire Int
-                | LSHIFT Wire Int
+data Operation = AND String String
+               | OR String String
+               | RSHIFT String Int
+               | LSHIFT String Int
+               | NOT String
+               | ASSIGN String
+               deriving Show
+type Device = Map.Map String Word16
 
+readNumber :: String -> Bool
+readNumber = all isNumber
 
+wireValue :: String -> Device -> Word16
+wireValue wire device =
+    if readNumber wire
+        then read wire
+        else fromMaybe 0 (Map.lookup wire device)
+
+getInstruction :: [String] -> (String, Operation)
+getInstruction xs = (name, operation)
+    where name = last xs
+          instruction = init . init $ xs
+          operation = case instruction of
+              [wire1, "AND", wire2] -> AND wire1 wire2
+              [wire1, "OR", wire2] -> OR wire1 wire2
+              [wire, "RSHIFT", shiftNr] -> RSHIFT wire (read shiftNr)
+              [wire, "LSHIFT", shiftNr] -> LSHIFT wire (read shiftNr)
+              ["NOT", wire] -> NOT wire
+              [wire] -> ASSIGN wire
+
+executeInstruction :: Device -> Operation -> Word16
+executeInstruction device operation =
+    case operation of
+        AND wire1 wire2 ->
+            let wireValue1 = wireValue wire1 device
+                wireValue2 = wireValue wire2 device
+            in wireValue1 .&. wireValue2
+        OR wire1 wire2 -> 
+            let wireValue1 = wireValue wire1 device
+                wireValue2 = wireValue wire2 device
+            in wireValue1 .|. wireValue2
+        RSHIFT wire val -> 
+            let wireValue1 = wireValue wire device
+            in shiftR wireValue1 val
+        LSHIFT wire val -> 
+            let wireValue1 = wireValue wire device
+            in shiftL wireValue1 val
+        NOT wire -> 
+            let wireValue1 = wireValue wire device
+            in complement wireValue1
+        ASSIGN wire ->
+            let wireValue1 = wireValue wire device
+            in wireValue1
+
+insertInstruction :: Device -> (String, Operation) -> Device
+insertInstruction device (name, operation) =
+    Map.insert name (executeInstruction device operation) device
+
+main :: IO ()
+main = do
+    content <- readFile "./input.txt"
+    let instructions = lines content
+        device = Map.empty
+        parsedInstructions = map (getInstruction . words) instructions
+        finalDevice = foldl insertInstruction device parsedInstructions
+    print finalDevice
