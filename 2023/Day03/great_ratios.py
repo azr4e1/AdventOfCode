@@ -130,10 +130,6 @@ class SchematicsParser:
                                              positions)
                     engine_parts.append(engine_part)
 
-                    value = ''
-                    positions: list[Point2D] = []
-                    is_engine_part = False
-
                 if c in ENGINE_SYMBOLS:
                     symbols.append((c, (x, y)))
 

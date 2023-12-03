@@ -40,19 +40,19 @@ class TestEngine(unittest.TestCase):
             (5, 8): 451490
         }
 
-    def test_schematics_symbols(self):
+    def test_schematics_symbols(self) -> None:
         reader = SchematicsParser(self.schematics)
         read_symbols = reader.get_symbols()
         self.assertEqual(set(self.symbols), set(read_symbols))
 
-    def test_schematics_parts(self):
+    def test_schematics_parts(self) -> None:
         reader = SchematicsParser(self.schematics)
         read_engine_parts_numbers = [engine.value for engine in reader.get_parts()
                                      if engine.is_engine_part]
         self.assertEqual(set(self.engine_parts_numbers),
                          set(read_engine_parts_numbers))
 
-    def test_gears(self):
+    def test_gears(self) -> None:
         reader = AdvancedSchematicsParser(self.schematics)
         gears = reader.find_gears()
         self.assertDictEqual(self.gears, gears)
