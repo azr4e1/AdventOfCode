@@ -229,15 +229,146 @@ class AlmanacParser:
 # Second Puzzle
 class Range:
     def __init__(self, start: int, length: int) -> None:
+        if length <= 0:
+            raise ValueError("Length must be greater than 0")
+        if not isinstance(start, int):
+            raise ValueError("Start must be an integer")
+        if not isinstance(length, int):
+            raise ValueError("Length must be an integer")
         self.start = start
         self.end = start + length - 1
         self.length = length
 
-    def union(self, other: Range) -> None:
-        pass
+    def __str__(self) -> str:
+        return f"Range[{self.start}, {self.end}]"
 
-    def intersection(self, other: Range) -> None:
-        pass
+    def __repr__(self) -> str:
+        return f"Range[{self.start}, {self.end}]"
+
+    def __eq__(self, other: Range) -> bool:
+        comp1 = self.start == other.start
+        comp2 = self.end == other.end
+
+        return comp1 and comp2
+
+    def __hash__(self) -> int:
+        return hash((self.start, self.length))
+
+    def __add__(self, other: Range) -> list[Range]:
+        if other.start-self.end > 1 or self.start-other.end>1:
+            return [self, other]
+        else:
+            cls = self.__class__
+            extremes = {self.start, self.end, other.start, other.end}
+            start = min(extremes)
+            length = max(extremes) - start + 1
+            new_range = cls(start, length)
+
+            return [new_range]
+
+    def __sub__(self, other: Range) -> list[Range]:
+        cls = self.__class__
+        if self.end < other.start or self.start > other.end:
+            return [self]
+        elif other.start >= self.start and other.end <= self.end:
+            length1 = other.start - self.start + 1
+            length2 = self.end - other.end + 1
+            return [cls(self.start, length1), cls(other.end, length2)]
+        elif other.start >= self.start and other.start <= self.end:
+            length = other.start - self.start + 1
+            return [cls(self.start, length)]
+        elif other.end >= self.start and other.end <= self.end:
+            length = self.end - other.end + 1
+            return [cls(other.end, length)]
+        else:
+            return []
+
+    def __truediv__(self, other: Range) -> list[Range]:
+        cls = self.__class__
+        if self.end < other.start or self.start > other.end:
+            return []
+        elif other.start >= self.start and other.end <= self.end:
+            return [other]
+        elif other.start >= self.start and other.start <= self.end:
+            length = self.end - other.start + 1
+            return [cls(other.start, length)]
+        elif other.end >= self.start and other.end <= self.end:
+            length = other.end - self.start + 1
+            return [cls(self.start, length)]
+        else:
+            return [self]
+
+
+class BetterAlmanacParser:
+    HEADER_SYMBOL = " map:"
+
+    def __init__(self, almanac: str) -> None:
+        self.almanac = almanac
+        self.original_seeds = [int(seed)
+                               for seed in almanac[0].split(':')[-1].split()]
+        self._get_maps()
+        self.seeds = []
+        for index in range(0, len(self.original_seeds)-1, 2):
+            seed_nr = self.original_seeds[index]
+            seed_len = self.original_seeds[index+1]
+            seed_range = Range(seed_nr, seed_len)
+            self.seeds.append(seed_range)
+        self._get_maps()
+
+    def _get_maps(self) -> None:
+        maps = {}
+        ordered_maps_list = []
+        current_context = ""
+        context_map = {}
+        for line in self.almanac[1:]:
+            if not line:
+                continue
+            if self.HEADER_SYMBOL in line:
+                if current_context:
+                    maps[current_context] = context_map
+                    ordered_maps_list.append(current_context)
+                current_context = line.removesuffix(self.HEADER_SYMBOL)
+                context_map = {}
+                continue
+            dest_start, source_start, nr = tuple([int(x) for x in line.split()])
+            context_map[Range(source_start, nr)] = Range(dest_start, nr)
+
+        # wrap up
+        maps[current_context] = context_map
+        ordered_maps_list.append(current_context)
+
+        self.maps = maps
+        self.ordered_maps_list = ordered_maps_list
+
+    def _map_range(self,
+                   range_to_apply: Range,
+                   key: Range,
+                   value: Range) -> tuple[Range, list[Range]]:
+        intersection = (range_to_apply / key)[0]
+        if intersection:
+            remaining: Range = range_to_apply - key
+            start_diff = intersection.start - key.start
+            mapped_range = Range(value.start+start_diff, intersection.length)
+        else:
+            remaining = []
+            mapped_range = None
+
+        return mapped_range, remaining
+
+    def apply_map(self):
+        translation = {}
+        map_to_translate = self.seeds
+        for map_name in self.ordered_maps_list:
+            remaining_els = []
+            mapped_els = []
+            for el in map_to_translate:
+                for key, value in self.maps[map_name]:
+                    mapped_range, remaining = self._map_range(el,
+                                                              key,
+                                                              value)
+                    if mapped_range is not None:
+                        mapped_els.append(mapped_range)
+                    remaining_els.extend(remaining)
 
 
 if __name__ == "__main__":
@@ -246,3 +377,6 @@ if __name__ == "__main__":
 
     parser = AlmanacParser(almanac)
     print("The lowest location number is:", min(parser.get_locations()))
+
+    better_parser = BetterAlmanacParser(almanac)
+    print(better_parser.maps['humidity-to-location'])
