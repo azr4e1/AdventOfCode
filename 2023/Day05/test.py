@@ -1,5 +1,6 @@
 import unittest
-from fertilizer import AlmanacParser, BetterAlmanacParser, Range, MultiRange
+from ranges import Range, MultiRange
+from parsers import AlmanacParser, BetterAlmanacParser
 from test_almanac import ALMANAC
 
 
@@ -12,7 +13,7 @@ class TestAlmanac(unittest.TestCase):
         self.seeds = [79, 14, 55, 13]
         self.locations = [82, 43, 86, 35]
         self.lowest_location_nr_snd = 46
-        self.range_seeds = [Range(79, 14), Range(55, 13)]
+        self.range_seeds = MultiRange(Range(79, 14), Range(55, 13))
 
     def test_parser(self):
         parser = AlmanacParser(self.almanac_str)
@@ -36,6 +37,12 @@ class TestAlmanac(unittest.TestCase):
         parser = BetterAlmanacParser(self.almanac_str)
         range_seeds = parser.seeds
         self.assertEqual(range_seeds, self.range_seeds)
+
+    def test_betterparser(self):
+        parser = BetterAlmanacParser(self.almanac_str)
+        location = parser.apply_map()
+        lowest_point = location.ranges[0].start
+        self.assertEqual(self.lowest_location_nr_snd, lowest_point)
 
 
 if __name__ == "__main__":
