@@ -1,5 +1,5 @@
 import unittest
-from fertilizer import AlmanacParser, BetterAlmanacParser, Range
+from fertilizer import AlmanacParser, BetterAlmanacParser, Range, MultiRange
 from test_almanac import ALMANAC
 
 
@@ -24,6 +24,13 @@ class TestAlmanac(unittest.TestCase):
         parser = AlmanacParser(self.almanac_str)
         read_locations = parser.get_locations()
         self.assertSetEqual(set(read_locations), set(self.locations))
+
+    def test_multirange(self):
+        a = Range(0, 20)
+        # b = Range(14, 40)
+        c = Range(60, 30)
+
+        self.assertEqual(a / c, MultiRange())
 
     def test_range_seeds(self):
         parser = BetterAlmanacParser(self.almanac_str)

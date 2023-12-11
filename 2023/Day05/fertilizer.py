@@ -140,6 +140,7 @@
 # seed numbers?
 from __future__ import annotations
 from typing import TypeAlias
+from sys import maxsize
 
 Almanac: TypeAlias = dict[tuple[int, int], tuple[int, int]]
 
@@ -255,7 +256,7 @@ class Range:
         return hash((self.start, self.length))
 
     def __add__(self, other: Range) -> MultiRange:
-        if other.start-self.end > 1 or self.start-other.end>1:
+        if other.start-self.end > 1 or self.start-other.end > 1:
             return MultiRange(self, other)
         else:
             cls = self.__class__
@@ -265,23 +266,6 @@ class Range:
             new_range = cls(start, length)
 
             return MultiRange(new_range)
-
-    def __sub__(self, other: Range) -> MultiRange:
-        cls = self.__class__
-        if self.end < other.start or self.start > other.end:
-            return MultiRange(self)
-        elif other.start >= self.start and other.end <= self.end:
-            length1 = other.start - self.start + 1
-            length2 = self.end - other.end + 1
-            return MultiRange(cls(self.start, length1), cls(other.end, length2))
-        elif other.start >= self.start and other.start <= self.end:
-            length = other.start - self.start + 1
-            return MultiRange(cls(self.start, length))
-        elif other.end >= self.start and other.end <= self.end:
-            length = self.end - other.end + 1
-            return MultiRange(cls(other.end, length))
-        else:
-            return MultiRange()
 
     def __truediv__(self, other: Range) -> list[Range]:
         cls = self.__class__
@@ -297,6 +281,15 @@ class Range:
             return MultiRange(cls(self.start, length))
         else:
             return MultiRange(self)
+
+    def __sub__(self, other: Range) -> MultiRange:
+        # get complement
+        minsize = -1*maxsize
+        complement_range1 = Range(minsize, other.start - minsize)
+        complement_range2 = Range(other.end+1, maxsize - other.end)
+        multirange = MultiRange(complement_range1, complement_range2)
+
+        return multirange / self
 
 
 class MultiRange(Range):
@@ -314,7 +307,18 @@ class MultiRange(Range):
                 ranges.append(el)
         ranges.sort(key=lambda x: x.start)
 
-        return ranges
+        compacted_ranges = []
+        for range in ranges:
+            for index, old_range in enumerate(compacted_ranges):
+                if old_range / range != MultiRange():
+                    del compacted_ranges[index]
+                    compacted_ranges.append((old_range+range).ranges[0])
+                    break
+            else:
+                compacted_ranges.append(range)
+
+        # compacted_ranges.sort(key=lambda x: x.start)
+        return compacted_ranges
 
     def __eq__(self, other: MultiRange) -> bool:
         if not isinstance(other, MultiRange):
@@ -334,11 +338,19 @@ class MultiRange(Range):
         cls = self.__class__
         return cls(self, other)
 
-    def __sub__(self, other: Range) -> MultiRange:
-        pass
-
     def __truediv__(self, other: Range) -> MultiRange:
-        pass
+        new_ranges: list[Range] = []
+        cls = self.__class__
+        for range in self.ranges:
+            if not isinstance(other, MultiRange):
+                result = range / other
+                new_ranges.append(result)
+            else:
+                for other_range in other.ranges:
+                    result = range / other_range
+                    new_ranges.append(result)
+
+        return cls(*new_ranges)
 
     def __str__(self) -> str:
         if len(self.ranges) == 0:
