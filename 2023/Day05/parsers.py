@@ -25,7 +25,7 @@ class AlmanacParser:
         maps = {}
         ordered_maps_list = []
         current_context = ""
-        context_map = {}
+        context_map: dict[tuple[int, int], tuple[int, int]] = {}
         for line in self.almanac[1:]:
             if not line:
                 continue
@@ -62,7 +62,7 @@ class AlmanacParser:
 class BetterAlmanacParser:
     HEADER_SYMBOL = " map:"
 
-    def __init__(self, almanac: str) -> None:
+    def __init__(self, almanac: list[str]) -> None:
         self.almanac = almanac
         self.original_seeds = [int(seed)
                                for seed in almanac[0].split(':')[-1].split()]
@@ -79,7 +79,7 @@ class BetterAlmanacParser:
         maps = {}
         ordered_maps_list = []
         current_context = ""
-        context_map = {}
+        context_map: dict[Range, Range] = {}
         for line in self.almanac[1:]:
             if not line:
                 continue

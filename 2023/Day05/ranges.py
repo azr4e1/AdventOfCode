@@ -20,7 +20,9 @@ class Range:
     def __repr__(self) -> str:
         return f"Range[{self.start}, {self.end}]"
 
-    def __eq__(self, other: Range) -> bool:
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Range):
+            return False
         comp1 = self.start == other.start
         comp2 = self.end == other.end
 
@@ -41,7 +43,7 @@ class Range:
 
             return MultiRange(new_range)
 
-    def __truediv__(self, other: Range) -> list[Range]:
+    def __truediv__(self, other: Range) -> MultiRange:
         cls = self.__class__
         if self.end < other.start or self.start > other.end:
             return MultiRange()
@@ -75,7 +77,7 @@ class MultiRange(Range):
     def __init__(self, *args: Range):
         self.ranges = self._compact_ranges(args)
 
-    def _compact_ranges(self, input: list) -> list:
+    def _compact_ranges(self, input: tuple[Range, ...]) -> list[Range]:
         ranges = []
         for el in input:
             if not isinstance(el, Range):
@@ -86,7 +88,7 @@ class MultiRange(Range):
                 ranges.append(el)
         ranges.sort(key=lambda x: x.start)
 
-        compacted_ranges = []
+        compacted_ranges: list[Range] = []
         for range in ranges:
             for index, old_range in enumerate(compacted_ranges):
                 if old_range / range != MultiRange() \
@@ -101,7 +103,7 @@ class MultiRange(Range):
         # compacted_ranges.sort(key=lambda x: x.start)
         return compacted_ranges
 
-    def __eq__(self, other: MultiRange) -> bool:
+    def __eq__(self, other) -> bool:
         if not isinstance(other, MultiRange):
             return False
         if len(self) != len(other):
