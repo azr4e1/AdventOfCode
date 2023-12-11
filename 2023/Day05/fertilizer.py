@@ -254,9 +254,9 @@ class Range:
     def __hash__(self) -> int:
         return hash((self.start, self.length))
 
-    def __add__(self, other: Range) -> list[Range]:
+    def __add__(self, other: Range) -> MultiRange:
         if other.start-self.end > 1 or self.start-other.end>1:
-            return [self, other]
+            return MultiRange(self, other)
         else:
             cls = self.__class__
             extremes = {self.start, self.end, other.start, other.end}
@@ -264,39 +264,90 @@ class Range:
             length = max(extremes) - start + 1
             new_range = cls(start, length)
 
-            return [new_range]
+            return MultiRange(new_range)
 
-    def __sub__(self, other: Range) -> list[Range]:
+    def __sub__(self, other: Range) -> MultiRange:
         cls = self.__class__
         if self.end < other.start or self.start > other.end:
-            return [self]
+            return MultiRange(self)
         elif other.start >= self.start and other.end <= self.end:
             length1 = other.start - self.start + 1
             length2 = self.end - other.end + 1
-            return [cls(self.start, length1), cls(other.end, length2)]
+            return MultiRange(cls(self.start, length1), cls(other.end, length2))
         elif other.start >= self.start and other.start <= self.end:
             length = other.start - self.start + 1
-            return [cls(self.start, length)]
+            return MultiRange(cls(self.start, length))
         elif other.end >= self.start and other.end <= self.end:
             length = self.end - other.end + 1
-            return [cls(other.end, length)]
+            return MultiRange(cls(other.end, length))
         else:
-            return []
+            return MultiRange()
 
     def __truediv__(self, other: Range) -> list[Range]:
         cls = self.__class__
         if self.end < other.start or self.start > other.end:
-            return []
+            return MultiRange()
         elif other.start >= self.start and other.end <= self.end:
-            return [other]
+            return MultiRange(other)
         elif other.start >= self.start and other.start <= self.end:
             length = self.end - other.start + 1
-            return [cls(other.start, length)]
+            return MultiRange(cls(other.start, length))
         elif other.end >= self.start and other.end <= self.end:
             length = other.end - self.start + 1
-            return [cls(self.start, length)]
+            return MultiRange(cls(self.start, length))
         else:
-            return [self]
+            return MultiRange(self)
+
+
+class MultiRange(Range):
+    def __init__(self, *args: Range):
+        self.ranges = self._compact_ranges(args)
+
+    def _compact_ranges(self, input: list) -> list:
+        ranges = []
+        for el in input:
+            if not isinstance(el, Range):
+                continue
+            elif isinstance(el, MultiRange):
+                ranges.extend(el.ranges)
+            else:
+                ranges.append(el)
+        ranges.sort(key=lambda x: x.start)
+
+        return ranges
+
+    def __eq__(self, other: MultiRange) -> bool:
+        if not isinstance(other, MultiRange):
+            return False
+        if len(self) != len(other):
+            return False
+        comps: list[bool] = []
+        for el1, el2 in zip(self.ranges, other.ranges):
+            comps.append(el1 == el2)
+
+        return all(comps)
+
+    def __len__(self) -> int:
+        return len(self.ranges)
+
+    def __add__(self, other: Range) -> MultiRange:
+        cls = self.__class__
+        return cls(self, other)
+
+    def __sub__(self, other: Range) -> MultiRange:
+        pass
+
+    def __truediv__(self, other: Range) -> MultiRange:
+        pass
+
+    def __str__(self) -> str:
+        if len(self.ranges) == 0:
+            return "MultiRange[empty]"
+        range_string = ", ".join([str(r) for r in self.ranges])
+        return f"MultiRange[{range_string}]"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 class BetterAlmanacParser:
