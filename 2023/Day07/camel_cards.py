@@ -125,7 +125,7 @@
 # Using the new joker rule, find the rank of every hand in your set. What are
 # the new total winnings?
 
-from parser import Parser
+from parser import Parser, JokerParser
 from cards import Hand
 
 if __name__ == "__main__":
@@ -144,3 +144,14 @@ if __name__ == "__main__":
         winning += value
 
     print("The total winnings are:", winning)
+
+    joker_parser = JokerParser(game)
+    joker_parsed_hands = joker_parser.parse()
+    joker_sorted_hands = sorted(joker_parsed_hands, key=lambda x: x[0])
+    joker_winning = 0
+    for index, hand in enumerate(joker_sorted_hands):
+        rank = index+1
+        value = rank*hand[1]
+        joker_winning += value
+
+    print("The total winnings with Joker are:", joker_winning)

@@ -63,3 +63,15 @@ class JokerHand:
                 self.hand_value = index
                 self.hand_type = HAND_TYPES[index]
                 break
+
+
+def make_joker_hand(cards: str) -> JokerHand:
+    if len(cards) != 5:
+        raise ValueError
+    cards_obj = []
+    for card in cards:
+        if card not in CARD_RANKS:
+            raise ValueError
+        cards_obj.append(JokerCard(card))
+
+    return JokerHand(*cards_obj)
