@@ -111,7 +111,5 @@ if __name__ == "__main__":
     print("Nr. of steps to reach destination is:", len_steps)
 
     ghostly_navigator = GhostlyNavigator(parser.instructions, parser.network)
-    el = ghostly_navigator.navigate()
-    print(el)
-
-    # print("Nr. of ghostly steps to reach destination is:", ghostly_navigator.steps)
+    ghostly_navigator.navigate()
+    print("Nr. of steps to reach destination is:", ghostly_navigator.steps)
