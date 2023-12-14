@@ -46,6 +46,28 @@ class Maze:
 
         return Tile(self, j, i)
 
+    def __iter__(self):
+        return MazeIterator(self)
+
+
+class MazeIterator:
+    def __init__(self, maze: Maze) -> None:
+        self.maze = maze
+        self.i = 0
+        self.j = 0
+
+    def __next__(self):
+        if self.j > self.maze.width:
+            self.i += 1
+            self.j = 0
+        if self.i > self.maze.height:
+            raise StopIteration
+
+        tile = Tile(self.maze, self.j, self.i)
+        self.j += 1
+
+        return tile
+
 
 class Position:
     def __init__(self, maze: Maze, x: int, y: int):
