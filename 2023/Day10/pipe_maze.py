@@ -131,3 +131,19 @@
 # Find the single giant loop starting at S. How many steps along the loop does
 # it take to get from the starting position to the point farthest from the
 # starting position?
+
+from tiles import Tile, Position, Maze, Tunnel
+
+
+if __name__ == "__main__":
+    maze_str = []
+    with open("./input.txt") as f:
+        for line in f:
+            maze_str.append(line.strip())
+
+    maze = Maze(maze_str)
+    S = maze.find_start()
+    tunnel = Tunnel(maze, S)
+    max_distance, _ = tunnel.get_polar_opposite()
+
+    print("Max distance from starting position:", max_distance)

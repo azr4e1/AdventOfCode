@@ -1,20 +1,16 @@
 from __future__ import annotations
 from typing import TypeAlias
-from itertools import product
+from itertools import permutations
 from abc import ABC, abstractmethod
 
 MazeType: TypeAlias = list[str]
 
 TILES = ".|-LJ7FS"
 CARDINALITY = {
-    "north": (0, 1),
+    "north": (0, -1),
     "east": (1, 0),
     "west": (-1, 0),
-    "south": (0, -1),
-    "north-east": (1, 1),
-    "north-west": (-1, 1),
-    "south-east": (1, -1),
-    "south-west": (-1, -1)
+    "south": (0, 1),
 }
 
 
@@ -29,6 +25,14 @@ class Maze:
             return False
         return self.maze == other.maze
 
+    def __getitem__(self, key: Position) -> str:
+        if key.maze != self:
+            raise ValueError("Maze of position provided is different.")
+
+        x, y = key.x, key.y
+
+        return self.maze[y][x]
+
     def find_start(self) -> Tile:
         for i, line in enumerate(self.maze):
             for j, char in enumerate(line):
@@ -40,7 +44,7 @@ class Maze:
         else:
             i, j = -1, -1
 
-        return Tile(self, "S", j, i)
+        return Tile(self, j, i)
 
 
 class Position:
@@ -86,14 +90,15 @@ class Position:
 
     def get_surroundings(self) -> set[Position]:
         positions = set()
-        possible_combinations = product([-1, 0, 1], repeat=2)
+        possible_combinations = list(permutations([0, 1]))
+        possible_combinations += list(permutations([0, -1]))
         for x, y in possible_combinations:
             new_position = Position(self.maze,
                                     self.x+x,
                                     self.y+y)
             positions.add(new_position)
 
-        positions.discard(self)
+        positions.discard(Position(self.maze, self.x, self.y))
 
         return positions
 
@@ -109,7 +114,7 @@ class AbstractTile(ABC):
     def __get_positions(self, x: int, y: int) -> None:
         match self.tile:
             case ".":
-                return set()
+                card = []
             case "S":
                 card = list(CARDINALITY.keys())
             case "-":
@@ -145,10 +150,16 @@ class AbstractTile(ABC):
 
 
 class Tile(AbstractTile, Position):
-    def __init__(self, maze: Maze, tile: str, x: int, y: int):
+    def __init__(self, maze: Maze, x: int, y: int):
 
-        super().__init__(tile, x, y)
         super(AbstractTile, self).__init__(maze, x, y)
+        tile = maze[Position(maze, x, y)]
+        super().__init__(tile, self.x, self.y)
+
+    @classmethod
+    def from_position(cls, position: Position):
+
+        return cls(position.maze, position.x, position.y)
 
     def __str__(self) -> str:
         string = f"Tile('{self.tile}', [{self.x}, {self.y}])"
@@ -160,14 +171,10 @@ class Tile(AbstractTile, Position):
 
         return string
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Tile):
-            return False
+    def __hash__(self) -> int:
+        maze_identifier = "".join(self.maze.maze)
 
-        comp1 = super(AbstractTile, self).__eq__(other)
-        comp2 = self.tile == other.tile
-
-        return comp1 and comp2
+        return hash((self.tile, self.x, self.y, maze_identifier))
 
     def get_valid_positions(self) -> set[Position]:
         surroundings = self.get_surroundings()
@@ -175,10 +182,57 @@ class Tile(AbstractTile, Position):
         for (x, y) in self.pipes:
             pipe_position = Position(self.maze, x, y)
             if pipe_position in surroundings:
-                valid_positions.add(pipe_position)
+                valid_positions.add(Tile.from_position(pipe_position))
 
         return valid_positions
 
 
 class Tunnel:
-    pass
+    def __init__(self, maze: Maze, starting_point: Tile) -> None:
+        self.maze = maze
+        self.starting_point = starting_point
+        self._explore()
+
+    def _explore(self) -> None:
+        sequence = [self.starting_point]
+        prev_tile = sequence[-1]
+        while True:
+            next_tile = sequence[-1]
+            next_tiles = self._get_next_tiles(next_tile, prev_tile)
+
+            # no more valid routes to follow
+            if len(next_tiles) == 0:
+                break
+
+            chosen_tile = next_tiles.pop()
+            # we get at the start of the loop
+            if chosen_tile == self.starting_point:
+                break
+
+            sequence.append(chosen_tile)
+            prev_tile = next_tile
+
+        self.sequence = sequence
+
+    def _get_next_tiles(self, tile: Tile, prev_tile: Tile) -> set[Tile]:
+        pipe_positions = tile.get_valid_positions()
+        next_pipes = set()
+        for position in pipe_positions.copy():
+            surrounding_tile = Tile.from_position(position)
+            if surrounding_tile == prev_tile:
+                continue
+            surrounding_tile_pipes = surrounding_tile.get_valid_positions()
+            if tile in surrounding_tile_pipes:
+                next_pipes.add(surrounding_tile)
+
+        return next_pipes
+
+    def get_polar_opposite(self):
+        length = len(self.sequence)
+        opposite_index = length // 2
+        if opposite_index % 2 == 0:
+            max_distance = opposite_index
+        else:
+            max_distance = opposite_index + 1
+
+        return (max_distance, self.sequence[opposite_index])
