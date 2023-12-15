@@ -2,6 +2,12 @@ from __future__ import annotations
 from typing import TypeAlias
 from itertools import permutations
 from abc import ABC, abstractmethod
+from enum import Enum
+
+
+class Inside(Enum):
+    OUT = 0
+    IN = 1
 
 MazeType: TypeAlias = list[str]
 
@@ -258,3 +264,66 @@ class Tunnel:
             max_distance = opposite_index + 1
 
         return (max_distance, self.sequence[opposite_index])
+
+    def get_internal_tiles(self) -> set[Tile]:
+        loop_tiles = set(self.sequence)
+        internal_tiles = set()
+        up_tiles = {"|", "L", "J"}
+        down_tiles = {"|", "7", "F"}
+        for j in range(self.maze.height+1):
+            # for every tile that goes up/down,
+            # there must be one that goes
+            # down/up since it's a close loop.
+            # This means that if we meet an
+            # up/down tile while scrolling to
+            # the right that wasn't immediately
+            # preceded by a down/up tile,
+            # everything that follows must be
+            # internal or part of the loop, until
+            # we find a down/up tile. If
+            # every up/down tile has met a
+            # corresponding down/up tile, then
+            # as we scroll, every tile must be
+            # external or part of the loop
+            up_counter = 0
+            down_counter = 0
+            for i in range(0, self.maze.width+1):
+                tile = Tile(self.maze, i, j)
+                tile_in_loop = tile in loop_tiles
+
+                # S is special because it can be a down
+                # or right or both tile depending on the
+                # context, so we need to check.
+                if tile.tile == "S":
+                    surroundings = tile.get_surroundings()
+                    for position in surroundings:
+                        surrounding_tile = Tile(
+                            self.maze, position.x, position.y)
+                        # check if below S there is an up tile.
+                        # This means S is a down tile
+                        if surrounding_tile.y > tile.y and \
+                                surrounding_tile.tile in up_tiles and \
+                                surrounding_tile in loop_tiles:
+                            down_counter += 1
+                        # check if above S there is a down tile.
+                        # This means S is a up tile.
+                        elif surrounding_tile.y < tile.y and \
+                                surrounding_tile.tile in down_tiles and \
+                                surrounding_tile in loop_tiles:
+                            up_counter += 1
+                if tile_in_loop and tile.tile in up_tiles:
+                    up_counter += 1
+                if tile_in_loop and tile.tile in down_tiles:
+                    down_counter += 1
+
+                # check if the tile is not part of the loop,
+                # and if not every up/down tile has
+                # been matched by a down/up tile already.
+                # This means that every tile not part
+                # of the loop is internal, until the
+                # non matched tiles are matched.
+                if not tile_in_loop and (up_counter % 2 == 1
+                                         or down_counter % 2 == 1):
+                    internal_tiles.add(tile)
+
+        return internal_tiles

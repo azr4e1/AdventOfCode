@@ -53,7 +53,34 @@ class TestArea(unittest.TestCase):
         self.area = 10
 
     def test_area(self):
-        self.assertEqual(3, 3)
+        internal_tiles = self.tunnel.get_internal_tiles()
+        area = len(internal_tiles)
+        self.assertEqual(area, self.area)
+
+
+class TestArea2(unittest.TestCase):
+    def setUp(self):
+        self.maze_str = [
+            ".F----7F7F7F7F-7....",
+            ".|F--7||||||||FJ....",
+            ".||.FJ||||||||L7....",
+            "FJL7L7LJLJ||LJ.L-7..",
+            "L--J.L7...LJS7F-7L7.",
+            "....F-J..F7FJ|L7L7L7",
+            "....L7.F7||L7|.L7L7|",
+            ".....|FJLJ|FJ|F7|.LJ",
+            "....FJL-7.||.||||...",
+            "....L---J.LJ.LJLJ...",
+        ]
+        self.maze = Maze(self.maze_str)
+        self.starting_point = self.maze.find_start()
+        self.tunnel = Tunnel(self.maze, self.starting_point)
+        self.area = 8
+
+    def test_area(self):
+        internal_tiles = self.tunnel.get_internal_tiles()
+        area = len(internal_tiles)
+        self.assertEqual(area, self.area)
 
 
 if __name__ == "__main__":

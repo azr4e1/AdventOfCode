@@ -258,3 +258,5 @@ if __name__ == "__main__":
     max_distance, _ = tunnel.get_polar_opposite()
 
     print("Max distance from starting position:", max_distance)
+    internal_tiles = tunnel.get_internal_tiles()
+    print("The number of tiles enclosed in the loop is", len(internal_tiles))
