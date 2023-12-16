@@ -2,12 +2,7 @@ from __future__ import annotations
 from typing import TypeAlias
 from itertools import permutations
 from abc import ABC, abstractmethod
-from enum import Enum
 
-
-class Inside(Enum):
-    OUT = 0
-    IN = 1
 
 MazeType: TypeAlias = list[str]
 
