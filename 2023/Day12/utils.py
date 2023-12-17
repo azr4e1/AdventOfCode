@@ -1,9 +1,10 @@
 import re
-from itertools import combinations_with_replacement, permutations
 
 BROKEN_SPRING = "#"
 WORKING_SPRING = "."
 UNKNOWN_SPRING = "?"
+
+FOLD_FACTOR = 5
 
 
 class ReportLine:
@@ -18,14 +19,14 @@ class ReportLine:
         self.broken_groups = broken_groups
 
     def _get_all_arrangements(self) -> set[tuple[int, ...]]:
-        question_marks = self.records.count("?")
-        combinations = combinations_with_replacement([BROKEN_SPRING,
-                                                      WORKING_SPRING],
-                                                     question_marks)
-        all_arrangements = set()
-        for comb in combinations:
-            perms = set(permutations(comb))
-            all_arrangements.update(perms)
+        question_marks = self.records.count(UNKNOWN_SPRING)
+        broken_springs_nr = self.records.count(BROKEN_SPRING)
+        all_broken_springs = sum(self.broken_groups)
+        missing_broken_springs = all_broken_springs - broken_springs_nr
+        working_spring_len = question_marks - missing_broken_springs
+        broken_springs = BROKEN_SPRING * missing_broken_springs
+        working_spings = WORKING_SPRING * working_spring_len
+        all_arrangements = permutations_with_repetition(broken_springs, working_spings)
 
         return all_arrangements
 
@@ -57,6 +58,33 @@ class ReportLine:
         for arrangement in all_arrangements:
             new_record = self._build_record(arrangement)
             if pattern.match(new_record):
-                valid_arrangements.add(new_record)
+                valid_arrangements.add(new_record[1:-1])
 
         return valid_arrangements
+
+
+class UnfoldedReportLine(ReportLine):
+    def __init__(self, line):
+        super().__init__(line)
+        self.records = UNKNOWN_SPRING.join([self.records]*FOLD_FACTOR)
+        self.broken_groups *= FOLD_FACTOR
+
+
+def permutations_with_repetition(set1: str, set2: str):
+    """
+    https://jjj.de/fxt/fxtbook.pdf @ Permutations of a multiset
+    """
+    if not set1:
+        return {set2}
+    if not set2:
+        return {set1}
+    rest_of_permutations1 = permutations_with_repetition(set1,
+                                                         set2[1:])
+    rest_of_permutations2 = permutations_with_repetition(set1[1:],
+                                                         set2)
+    new_set1 = {set1[0] + perm for perm in rest_of_permutations2}
+    new_set2 = {set2[0] + perm for perm in rest_of_permutations1}
+
+    new_set = new_set1.union(new_set2)
+
+    return new_set
