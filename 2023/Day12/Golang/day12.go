@@ -141,3 +141,7 @@ func Parse(s string) Input {
 
 	return input
 }
+
+func CountConfigurations(input Input) int {
+	return 0
+}
