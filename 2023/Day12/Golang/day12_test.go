@@ -2,6 +2,7 @@ package day12_test
 
 import (
 	"day12"
+	// "fmt"
 	"github.com/google/go-cmp/cmp"
 	"testing"
 )
@@ -42,5 +43,17 @@ func TestCountConfigurations_ReturnsTheCorrectNumberOfValidConfigurations(t *tes
 		if want != got {
 			t.Errorf("want %d, got %d for test %q", want, got, tc.Test)
 		}
+	}
+}
+
+func TestUnfoldUnfoldsAnInputNTimes(t *testing.T) {
+	t.Parallel()
+	input := day12.Input{"???.###", []int{1, 1, 3}}
+	n := 5
+	want := day12.Input{"???.###???.###???.###???.###???.###", []int{1, 1, 3, 1, 1, 3, 1, 1, 3, 1, 1, 3, 1, 1, 3}}
+	input.Unfold(n)
+
+	if !cmp.Equal(input, want) {
+		t.Error(cmp.Diff(input, want))
 	}
 }

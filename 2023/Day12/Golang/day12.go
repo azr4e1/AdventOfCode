@@ -122,6 +122,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -129,6 +130,17 @@ import (
 type Input struct {
 	Row    string
 	Groups []int
+}
+
+func (i *Input) Unfold(n int) {
+	str := i.Row
+	groups := slices.Clone(i.Groups)
+	for index := 0; index < n-1; index++ {
+		i.Row += str
+		for _, el := range groups {
+			i.Groups = append(i.Groups, el)
+		}
+	}
 }
 
 type memoized struct {
@@ -203,7 +215,7 @@ func CountConfigurations(input Input) int {
 	return result
 }
 
-func Main(path string) int {
+func Main(path string, unfold bool) int {
 	file, err := os.Open(path)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -217,6 +229,9 @@ func Main(path string) int {
 	for scanner.Scan() {
 		inputText := scanner.Text()
 		input := Parse(inputText)
+		if unfold {
+			input.Unfold(5)
+		}
 		result += count.call(input)
 	}
 

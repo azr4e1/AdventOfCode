@@ -6,6 +6,6 @@ import (
 )
 
 func main() {
-	os.Exit(day12.Main("../../input.txt"))
+	os.Exit(day12.Main("../../input.txt", true))
 
 }
