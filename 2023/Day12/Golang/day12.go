@@ -119,6 +119,9 @@
 package day12
 
 import (
+	"bufio"
+	"fmt"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -126,6 +129,36 @@ import (
 type Input struct {
 	Row    string
 	Groups []int
+}
+
+type memoized struct {
+	f     func(Input) int
+	cache map[string]int
+}
+
+func memoize(f func(Input) int) *memoized {
+	cache := make(map[string]int)
+	return &memoized{f, cache}
+}
+
+func (m *memoized) call(input Input) int {
+	stringified := fmt.Sprint(input)
+	val, ok := m.cache[stringified]
+	if ok {
+		return val
+	}
+	val = m.f(input)
+	m.cache[stringified] = val
+
+	return val
+}
+
+func (i Input) String() string {
+	groups := []string{}
+	for index := 0; index < len(i.Groups); index++ {
+		groups = append(groups, strconv.Itoa(i.Groups[index]))
+	}
+	return fmt.Sprintf("%s %s", i.Row, strings.Join(groups, ","))
 }
 
 func Parse(s string) Input {
@@ -143,5 +176,50 @@ func Parse(s string) Input {
 }
 
 func CountConfigurations(input Input) int {
+	var result int
+	switch {
+	case len(input.Row) == 0:
+		if len(input.Groups) > 0 {
+			return 0
+		}
+		return 1
+	case len(input.Groups) == 0:
+		if strings.Contains(input.Row, "#") {
+			return 0
+		}
+		return 1
+	case input.Row[0] == '.' || input.Row[0] == '?':
+		result += CountConfigurations(Input{input.Row[1:], input.Groups})
+		fallthrough
+	case input.Row[0] == '?' || input.Row[0] == '#':
+		if len(input.Row) == input.Groups[0] && !strings.Contains(input.Row, ".") {
+			result += CountConfigurations(Input{"", input.Groups[1:]})
+		}
+		if len(input.Row) > input.Groups[0] && !strings.Contains(input.Row[:input.Groups[0]], ".") && input.Row[input.Groups[0]] != '#' {
+			result += CountConfigurations(Input{input.Row[input.Groups[0]+1:], input.Groups[1:]})
+		}
+	}
+
+	return result
+}
+
+func Main(path string) int {
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+
+	count := memoize(CountConfigurations)
+
+	var result int
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		inputText := scanner.Text()
+		input := Parse(inputText)
+		result += count.call(input)
+	}
+
+	fmt.Fprintf(os.Stdout, "Final possible combinations are: %d\n", result)
 	return 0
 }

@@ -40,7 +40,7 @@ func TestCountConfigurations_ReturnsTheCorrectNumberOfValidConfigurations(t *tes
 		got := day12.CountConfigurations(tc.Test)
 
 		if want != got {
-			t.Errorf("want %d, got %d", want, got)
+			t.Errorf("want %d, got %d for test %q", want, got, tc.Test)
 		}
 	}
 }
