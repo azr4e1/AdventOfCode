@@ -17,26 +17,28 @@ MAP_SYMBOL = {"*": prod, "+": sum}
 
 def parse(input: str):
     values = []
-    for line in input.split("\n"):
-        if line.strip() == "":
+    lines = [l for l in input.split("\n") if l.strip() != ""]
+    symbols = lines[-1]
+    values = lines[:-1]
+    length = len(values[0])-1
+    numbers = []
+    block = []
+    while length >= 0:
+        num = ""
+        for line in values:
+            num += line[length]
+        length -= 1
+        if num.strip() == "":
+            numbers.append(block)
+            block = []
             continue
-        row = []
-        for val in line.split(" "):
-            val_strip = val.strip()
-            if len(val_strip) == 0:
-                continue
-            row.append(val_strip)
-        values.append(row)
+        block.append(int(num))
 
-    numbers = values[:-1]
-    transposed = [[] for i in numbers[0]]
-    for line in numbers:
-        for index, i in enumerate(line):
-            transposed[index].append(int(i))
+    if block:
+        numbers.append(block)
 
-    symbols = values[-1]
-
-    return transposed, symbols
+    symbols = [c for c in lines[-1].split() if c != " "]
+    return numbers, symbols
 
 
 with open("./input.txt") as f:
@@ -45,7 +47,9 @@ with open("./input.txt") as f:
 numbers, symbols = parse(content)
 
 total = 0
-for number, symbol in zip(numbers, symbols):
+for i in range(len(symbols)):
+    number = numbers[len(symbols) - i - 1]
+    symbol = symbols[i]
     total += MAP_SYMBOL[symbol](number)
 
 print("Result is:", total)
