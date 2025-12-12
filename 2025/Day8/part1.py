@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from math import sqrt
-from itertools import product
+from itertools import combinations
 
 
 @dataclass
@@ -34,7 +34,7 @@ def parse(input):
 
 def calculate_distances(boxes):
     distances = {}
-    for box1, box2 in product(boxes, boxes):
+    for box1, box2 in combinations(boxes, 2):
         distance = box1.distance(box2)
         if distance == 0:
             continue
@@ -44,7 +44,23 @@ def calculate_distances(boxes):
     return sorted_distances
 
 
-with open("./input2.txt") as f:
+with open("./input.txt") as f:
     content = f.read()
 
 boxes = parse(content)
+distances = calculate_distances(boxes)
+
+links = [set([box]) for box in boxes]
+for i in distances[:11]:
+    mini_set = set(i)
+    intersections = mini_set.copy()
+    for l in links.copy():
+        if len(mini_set.intersection(l)) > 0:
+            intersections.update(l)
+            index = links.index(l)
+            del links[index]
+    links.append(intersections)
+
+lengths = sorted([len(s) for s in links], reverse=True)
+print("Product is:", lengths[0] * lengths[1] * lengths[2])
+print("Product is:", lengths)
