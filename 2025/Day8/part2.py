@@ -60,7 +60,7 @@ for i in distances:
             index = links.index(l)
             del links[index]
     links.append(intersections)
-    if len(intersections) == 1:
+    if len(links) == 1:
         break
 
 print("Product is:", i[0].x * i[1].x)
