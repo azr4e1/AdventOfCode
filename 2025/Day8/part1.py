@@ -51,7 +51,7 @@ boxes = parse(content)
 distances = calculate_distances(boxes)
 
 links = [set([box]) for box in boxes]
-for i in distances[:11]:
+for i in distances[:1000]:
     mini_set = set(i)
     intersections = mini_set.copy()
     for l in links.copy():
