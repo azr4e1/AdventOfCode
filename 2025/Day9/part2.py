@@ -6,14 +6,17 @@ from tqdm import tqdm
 class Queue:
     def __init__(self, *args):
         self.queue = list(args)
+        self.quick_check = set(args)
 
     def add(self, el):
         self.queue.append(el)
+        self.quick_check.add(el)
 
     def pop(self):
         if self.queue:
             el = self.queue[0]
             self.queue = self.queue[1:]
+            self.quick_check.remove(el)
 
             return el
         return None
@@ -28,7 +31,7 @@ class Queue:
         return self.__str__()
 
     def __contains__(self, el):
-        return el in self.queue
+        return el in self.quick_check
 
 
 @dataclass
