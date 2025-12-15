@@ -1,6 +1,34 @@
 from dataclasses import dataclass
 from itertools import combinations
-from math import inf
+from tqdm import tqdm
+
+
+class Queue:
+    def __init__(self, *args):
+        self.queue = list(args)
+
+    def add(self, el):
+        self.queue.append(el)
+
+    def pop(self):
+        if self.queue:
+            el = self.queue[0]
+            self.queue = self.queue[1:]
+
+            return el
+        return None
+
+    def isempty(self) -> bool:
+        return len(self.queue) == 0
+
+    def __str__(self):
+        return " ".join([str(x) for x in self.queue])
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __contains__(self, el):
+        return el in self.queue
 
 
 @dataclass
@@ -24,6 +52,16 @@ class RedTile:
 
     def __hash__(self):
         return hash(f"{self.x}{self.y}")
+
+    def get_proximity(self):
+        proxy = set()
+        for x in [self.x-1, self.x, self.x+1]:
+            for y in [self.y-1, self.y, self.y+1]:
+                tile = self.__class__(x, y)
+                if tile == self:
+                    continue
+                proxy.add(tile)
+        return proxy
 
 
 def parse(input):
@@ -52,40 +90,52 @@ def calculate_distances(redtiles):
     return sorted_distances
 
 
-def find_green_tiles(redtiles):
+def find_perimeter(redtiles):
     greentiles = set()
-    min_x, max_x, min_y, max_y = inf, 0, inf, 0
     for rt1, rt2 in zip(redtiles, redtiles[1:]+[redtiles[0]]):
         greentiles.update(RedTile.tileset(rt1, rt2))
-        if rt1.x < min_x:
-            min_x = rt1.x
-        if rt1.y < min_y:
-            min_y = rt1.y
-        if rt1.x > max_x:
-            max_x = rt1.x
-        if rt1.y > max_y:
-            max_y = rt1.y
 
-    min_tile, max_tile = RedTile(min_x-2, min_y-2), RedTile(max_x+2, max_y+2)
-    inside = RedTile.tileset(min_tile, max_tile)
-    is_inside = False
-    for x in range(min_x, max_x+1):
-        for y in range(min_y, max_y+1):
-            tile = RedTile(x, y)
-            if tile in greentiles and not is_inside:
-                is_inside = True
-            if tile not in greentiles and is_inside:
-                is_inside = False
-            if not is_inside:
-                inside.remove(tile)
-    return inside
+    return greentiles
 
 
-with open("./input2.txt") as f:
+def expand_area(perimeter, el: RedTile, progress=False):
+    if el in perimeter:
+        return None
+    max_x, max_y = max(t.x for t in perimeter) + \
+        2, max(t.y for t in perimeter) + 2
+
+    def is_in_grid(el) -> bool:
+        if 0 <= el.x <= max_x and 0 <= el.y <= max_y:
+            return True
+        return False
+
+    queue = Queue(el)
+
+    portion = set()
+    if progress:
+        pbar = tqdm(total=max_x*max_y)
+    while not queue.isempty():
+        new_el = queue.pop()
+        # print(new_el)
+        portion.add(new_el)
+        if progress:
+            pbar.update()
+        proxy = new_el.get_proximity()
+        for i in proxy:
+            if is_in_grid(i) and i not in perimeter and i not in portion and i not in queue:
+                queue.add(i)
+
+    pbar.close()
+
+    return portion
+
+
+with open("./input.txt") as f:
     content = f.read()
 
 redtiles = parse(content)
-# distances = calculate_distances(redtiles)
+print("Calculating distances...")
+distances = calculate_distances(redtiles)
 
 
 # print("Biggest Square:", area(*distances[0]))
@@ -93,4 +143,39 @@ redtiles = parse(content)
 # print(tileset)
 # print(len(tileset))
 
-print(find_green_tiles(redtiles))
+print("Finding perimeter...")
+perimeter = find_perimeter(redtiles)
+
+# get the top left tile
+min_y = min(t.y for t in redtiles)
+top_tiles = {t for t in redtiles if t.y == min_y}
+min_x = min(t.x for t in top_tiles)
+inside_tile = RedTile(min_x+1, min_y+1)
+
+# print(inside_tile)
+
+
+print("Expanding area...")
+inside = expand_area(perimeter, inside_tile, progress=True)
+inside.update(perimeter)
+
+for rt1, rt2 in distances:
+    square = RedTile.tileset(rt1, rt2)
+    if square.issubset(inside):
+        break
+
+
+# for y in range(0, 9+1):
+#     for x in range(0, 14+1):
+#         rt = RedTile(x, y)
+#         if rt in square:
+#             print("O", end="")
+#         elif rt in redtiles:
+#             print("#", end="")
+#         elif rt in inside:
+#             print("X", end="")
+#         else:
+#             print(".", end="")
+#     print()
+
+print("Area is", len(square))
