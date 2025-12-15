@@ -54,38 +54,38 @@ def calculate_distances(redtiles):
 
 def find_green_tiles(redtiles):
     greentiles = set()
-    min_x, max_x, min_y, max_y = inf, 0, inf, 0
+    max_x, max_y = 0, 0
     for rt1, rt2 in zip(redtiles, redtiles[1:]+[redtiles[0]]):
         greentiles.update(RedTile.tileset(rt1, rt2))
-        if rt1.x < min_x:
-            min_x = rt1.x
-        if rt1.y < min_y:
-            min_y = rt1.y
+        # if rt1.x < min_x:
+        #     min_x = rt1.x
+        # if rt1.y < min_y:
+        #     min_y = rt1.y
         if rt1.x > max_x:
             max_x = rt1.x
         if rt1.y > max_y:
             max_y = rt1.y
 
-    min_tile, max_tile = RedTile(min_x-2, min_y-2), RedTile(max_x+2, max_y+2)
-    inside = RedTile.tileset(min_tile, max_tile)
-    is_inside = False
-    for x in range(min_x, max_x+1):
-        for y in range(min_y, max_y+1):
-            tile = RedTile(x, y)
-            if tile in greentiles and not is_inside:
-                is_inside = True
-            if tile not in greentiles and is_inside:
-                is_inside = False
-            if not is_inside:
-                inside.remove(tile)
-    return inside
+    # min_tile, max_tile = RedTile(min_x-2, min_y-2), RedTile(max_x+2, max_y+2)
+    # inside = RedTile.tileset(min_tile, max_tile)
+    # is_inside = False
+    # for x in range(min_x, max_x+1):
+    #     for y in range(min_y, max_y+1):
+    #         tile = RedTile(x, y)
+    #         if tile in greentiles and not is_inside:
+    #             is_inside = True
+    #         if tile not in greentiles and is_inside:
+    #             is_inside = False
+    #         if not is_inside:
+    #             inside.remove(tile)
+    return greentiles, max_x, max_y
 
 
 with open("./input2.txt") as f:
     content = f.read()
 
 redtiles = parse(content)
-# distances = calculate_distances(redtiles)
+distances = calculate_distances(redtiles)
 
 
 # print("Biggest Square:", area(*distances[0]))
@@ -93,4 +93,22 @@ redtiles = parse(content)
 # print(tileset)
 # print(len(tileset))
 
-print(find_green_tiles(redtiles))
+greentiles, max_x, max_y = find_green_tiles(redtiles)
+
+for r1, r2 in distances:
+    square = RedTile.tileset(r1, r2)
+    if square.issubset(greentiles):
+        break
+
+print("Area:", area(r1, r2))
+
+# for y in range(0, max_y+3):
+#     print("\n", end="")
+#     for x in range(0, max_x+3):
+#         tile = RedTile(x, y)
+#         if tile in redtiles:
+#             print("#", end="")
+#         elif tile in greentiles:
+#             print("X", end="")
+#         else:
+#             print(".", end="")
