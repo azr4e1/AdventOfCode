@@ -40,7 +40,7 @@ class RedTile:
     y: int
 
     def distance(self, other):
-        return abs(self.x - other.x+1) * abs(self.y - other.y+1)
+        return (abs(self.x - other.x)+1) * (abs(self.y - other.y)+1)
 
     @classmethod
     def tileset(cls, self, other):
@@ -65,6 +65,15 @@ class RedTile:
                     continue
                 proxy.add(tile)
         return proxy
+
+
+def is_in_square(el, rt1, rt2):
+    min_x, min_y = min([rt1.x, rt2.x]), min([rt1.y, rt2.y])
+    max_x, max_y = max([rt1.x, rt2.x]), max([rt1.y, rt2.y])
+
+    if min_x < el.x < max_x and min_y < el.y < max_y:
+        return True
+    return False
 
 
 def parse(input):
@@ -133,7 +142,54 @@ def expand_area(perimeter, el: RedTile, progress=False):
     return portion
 
 
-with open("./input.txt") as f:
+def is_square_inside(perimeter, rt1, rt2):
+    min_x, min_y = min([rt1.x, rt2.x]), min([rt1.y, rt2.y])
+    max_x, max_y = max([rt1.x, rt2.x]), max([rt1.y, rt2.y])
+
+    start_tile = RedTile(min_x+1, min_y+1)
+
+    def is_in_grid(el) -> bool:
+        if min_x < el.x < max_x and min_y < el.y < max_y:
+            return True
+        return False
+
+    queue = Queue(start_tile)
+
+    portion = set()
+    # pbar = tqdm(total=area(rt1, rt2))
+    while not queue.isempty():
+        new_el = queue.pop()
+        # pbar.update()
+        portion.add(new_el)
+        proxy = new_el.get_proximity()
+        for i in proxy:
+            if is_in_grid(i) and i not in perimeter and i not in portion and i not in queue:
+                queue.add(i)
+
+    # pbar.close()
+    square_perimeter = abs(rt1.x - rt2.x)*2 + abs(rt1.y-rt2.y)*2
+    square_area = area(rt1, rt2)
+
+    inside_area = square_area - square_perimeter
+    discovered_area = len(portion)
+
+    return discovered_area == inside_area
+
+
+def cross_perim(perimeter, rt1, rt2):
+    square_perim = find_perimeter([rt1, rt2])
+    common_els = square_perim.intersection(perimeter)
+
+    for el in common_els:
+        proxies = el.get_proximity()
+        for el2 in proxies:
+            if is_in_square(el2, rt1, rt2):
+                return True
+
+    return False
+
+
+with open("./input2.txt") as f:
     content = f.read()
 
 redtiles = parse(content)
@@ -150,21 +206,25 @@ print("Finding perimeter...")
 perimeter = find_perimeter(redtiles)
 
 # get the top left tile
-min_y = min(t.y for t in redtiles)
-top_tiles = {t for t in redtiles if t.y == min_y}
-min_x = min(t.x for t in top_tiles)
-inside_tile = RedTile(min_x+1, min_y+1)
+# min_y = min(t.y for t in redtiles)
+# top_tiles = {t for t in redtiles if t.y == min_y}
+# min_x = min(t.x for t in top_tiles)
+# inside_tile = RedTile(min_x+1, min_y+1)
 
 # print(inside_tile)
 
 
-print("Expanding area...")
-inside = expand_area(perimeter, inside_tile, progress=True)
-inside.update(perimeter)
+# print("Expanding area...")
+# inside = expand_area(perimeter, inside_tile, progress=True)
+# inside.update(perimeter)
 
-for rt1, rt2 in distances:
-    square = RedTile.tileset(rt1, rt2)
-    if square.issubset(inside):
+for rt1, rt2 in tqdm(distances):
+    # square = RedTile.tileset(rt1, rt2)
+    # if square.issubset(inside):
+    #     break
+    if cross_perim(perimeter, rt1, rt2):
+        continue
+    if is_square_inside(perimeter, rt1, rt2):
         break
 
 
@@ -181,4 +241,4 @@ for rt1, rt2 in distances:
 #             print(".", end="")
 #     print()
 
-print("Area is", len(square))
+print("Area is", area(rt1, rt2))
